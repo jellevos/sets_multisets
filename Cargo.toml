@@ -7,3 +7,5 @@ edition = "2018"
 
 [dependencies]
 rand = "0.8"
+bytevec = "0.2"
+fasthash = "0.4"

@@ -1,7 +1,9 @@
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 use std::iter::FromIterator;
 use rand::rngs::OsRng;
 use rand::seq::index::sample;
+use bytevec::ByteEncodable;
+use fasthash::xx;
 
 #[derive(Eq, PartialEq, Debug)]
 pub struct Set {
@@ -42,11 +44,53 @@ impl Set {
         result
     }
 
+    pub fn to_bitset(&self, universe: usize) -> Vec<bool> {
+        let mut bitset = vec![false; universe];
+
+        for element in &self.elements {
+            bitset[*element] = true;
+        }
+
+        bitset
+    }
+
+    pub fn to_bloom_filter(&self, bin_count: usize, hash_count: usize) -> Vec<bool> {
+        let mut bins = vec![false; bin_count];
+
+        for element in &self.elements {
+            let element_bytes = (*element as u64).encode::<u64>().unwrap();
+
+            for seed in 0..hash_count {
+                bins[xx::hash32_with_seed(&element_bytes, seed as u32) as usize % bin_count] = true;
+            }
+        }
+
+        bins
+    }
+
+}
+
+pub struct Multiset {
+    pub element_counts: HashMap<usize, usize>,
+}
+
+pub fn bloom_filter_contains(element: &usize, bins: &[bool], hash_count: usize) -> bool {
+    let bin_count = bins.len();
+
+    let element_bytes = (*element as u64).encode::<u64>().unwrap();
+
+    for seed in 0..hash_count {
+        if !bins[xx::hash32_with_seed(&element_bytes, seed as u32) as usize % bin_count] {
+            return false
+        }
+    }
+
+    true
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::Set;
+    use crate::{Set, bloom_filter_contains};
 
     #[test]
     fn test_random() {
@@ -78,5 +122,23 @@ mod tests {
         let expected = Set::new(&vec![4]);
 
         assert_eq!(Set::intersection(&vec![set1, set2, set3]), expected);
+    }
+
+    #[test]
+    fn test_to_bitset() {
+        let set = Set::new(&vec![1, 3, 4]);
+        assert_eq!(set.to_bitset(5), vec![false, true, false, true, true]);
+    }
+
+    #[test]
+    fn test_to_bloom_filter() {
+        let set = Set::new(&vec![1, 3, 4]);
+        let bloom_filter = set.to_bloom_filter(20, 2);
+
+        assert!(bloom_filter_contains(&1, &bloom_filter, 2));
+        assert!(!bloom_filter_contains(&2, &bloom_filter, 2));
+        assert!(bloom_filter_contains(&3, &bloom_filter, 2));
+        assert!(bloom_filter_contains(&4, &bloom_filter, 2));
+        assert!(!bloom_filter_contains(&5, &bloom_filter, 2));
     }
 }
