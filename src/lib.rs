@@ -3,7 +3,6 @@ use fasthash::xx;
 use rand::rngs::OsRng;
 use rand::seq::index::sample;
 use std::collections::{HashMap, HashSet};
-use std::iter::FromIterator;
 
 #[derive(Eq, PartialEq, Debug)]
 pub struct Set {
@@ -13,13 +12,13 @@ pub struct Set {
 impl Set {
     pub fn new(elements: &[usize]) -> Self {
         Set {
-            elements: HashSet::from_iter(elements.iter().copied()),
+            elements: elements.iter().copied().collect(),
         }
     }
 
     pub fn random(element_count: usize, universe: usize) -> Self {
         Set {
-            elements: HashSet::from_iter(sample(&mut OsRng, universe, element_count).into_iter()),
+            elements: sample(&mut OsRng, universe, element_count).into_iter().collect(),
         }
     }
 
@@ -33,7 +32,7 @@ impl Set {
 
     pub fn intersect(&self, other: &Set) -> Set {
         Set {
-            elements: HashSet::from_iter(self.elements.intersection(&other.elements).copied()),
+            elements: self.elements.intersection(&other.elements).copied().collect(),
         }
     }
 
