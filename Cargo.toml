@@ -1,5 +1,6 @@
 [package]
 name = "sets_multisets"
+description = "Simple API for working with sets and multisets of elements of type usize"
 version = "0.0.1"
 authors = ["Jelle Vos <J.V.Vos@tudelft.nl>"]
 edition = "2018"
