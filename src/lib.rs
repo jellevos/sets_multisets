@@ -1,9 +1,9 @@
-use std::collections::{HashSet, HashMap};
-use std::iter::FromIterator;
-use rand::rngs::OsRng;
-use rand::seq::index::sample;
 use bytevec::ByteEncodable;
 use fasthash::xx;
+use rand::rngs::OsRng;
+use rand::seq::index::sample;
+use std::collections::{HashMap, HashSet};
+use std::iter::FromIterator;
 
 #[derive(Eq, PartialEq, Debug)]
 pub struct Set {
@@ -11,13 +11,12 @@ pub struct Set {
 }
 
 impl Set {
-
     pub fn new(elements: &[usize]) -> Self {
         Set {
             elements: HashSet::from_iter(elements.iter().copied()),
         }
     }
-    
+
     pub fn random(element_count: usize, universe: usize) -> Self {
         Set {
             elements: HashSet::from_iter(sample(&mut OsRng, universe, element_count).into_iter()),
@@ -26,6 +25,10 @@ impl Set {
 
     pub fn len(&self) -> usize {
         self.elements.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.elements.is_empty()
     }
 
     pub fn intersect(&self, other: &Set) -> Set {
@@ -67,7 +70,6 @@ impl Set {
 
         bins
     }
-
 }
 
 pub struct Multiset {
@@ -81,7 +83,7 @@ pub fn bloom_filter_contains(element: &usize, bins: &[bool], hash_count: usize) 
 
     for seed in 0..hash_count {
         if !bins[xx::hash32_with_seed(&element_bytes, seed as u32) as usize % bin_count] {
-            return false
+            return false;
         }
     }
 
@@ -90,7 +92,7 @@ pub fn bloom_filter_contains(element: &usize, bins: &[bool], hash_count: usize) 
 
 #[cfg(test)]
 mod tests {
-    use crate::{Set, bloom_filter_contains};
+    use crate::{bloom_filter_contains, Set};
 
     #[test]
     fn test_random() {
