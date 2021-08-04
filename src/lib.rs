@@ -18,7 +18,9 @@ impl Set {
 
     pub fn random(element_count: usize, universe: usize) -> Self {
         Set {
-            elements: sample(&mut OsRng, universe, element_count).into_iter().collect(),
+            elements: sample(&mut OsRng, universe, element_count)
+                .into_iter()
+                .collect(),
         }
     }
 
@@ -32,7 +34,11 @@ impl Set {
 
     pub fn intersect(&self, other: &Set) -> Set {
         Set {
-            elements: self.elements.intersection(&other.elements).copied().collect(),
+            elements: self
+                .elements
+                .intersection(&other.elements)
+                .copied()
+                .collect(),
         }
     }
 
