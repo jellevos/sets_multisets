@@ -92,7 +92,7 @@ pub struct Multiset {
     pub element_counts: HashMap<usize, usize>,
 }
 
-pub fn bloom_filter_contains(element: &usize, bins: &[bool], hash_count: usize) -> bool {
+pub fn bloom_filter_contains(bins: &[bool], element: &usize, hash_count: usize) -> bool {
     let bin_count = bins.len();
 
     let element_bytes = (*element as u64).encode::<u64>().unwrap();
@@ -159,10 +159,10 @@ mod tests {
         let set = Set::new(&vec![1, 3, 4]);
         let bloom_filter = set.to_bloom_filter(20, 2);
 
-        assert!(bloom_filter_contains(&1, &bloom_filter, 2));
-        assert!(!bloom_filter_contains(&2, &bloom_filter, 2));
-        assert!(bloom_filter_contains(&3, &bloom_filter, 2));
-        assert!(bloom_filter_contains(&4, &bloom_filter, 2));
-        assert!(!bloom_filter_contains(&5, &bloom_filter, 2));
+        assert!(bloom_filter_contains(&bloom_filter, &1, 2));
+        assert!(!bloom_filter_contains(&bloom_filter, &2, 2));
+        assert!(bloom_filter_contains(&bloom_filter, &3, 2));
+        assert!(bloom_filter_contains(&bloom_filter, &4, 2));
+        assert!(!bloom_filter_contains(&bloom_filter, &5, 2));
     }
 }
