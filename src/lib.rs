@@ -89,7 +89,21 @@ impl Set {
     }
 }
 
-impl<'a> FromIterator<usize> for Set {
+impl Multiset {
+    pub fn new(elements: &[usize], counts: &[usize]) -> Self {
+        assert_eq!(elements.len(), counts.len());
+
+        Multiset {
+            element_counts: elements
+                .iter()
+                .copied()
+                .zip(counts.iter().copied())
+                .collect(),
+        }
+    }
+}
+
+impl FromIterator<usize> for Set {
     fn from_iter<T: IntoIterator<Item = usize>>(iter: T) -> Self {
         Set {
             elements: iter.into_iter().collect(),
@@ -97,8 +111,17 @@ impl<'a> FromIterator<usize> for Set {
     }
 }
 
+#[derive(Eq, PartialEq, Debug)]
 pub struct Multiset {
     pub element_counts: HashMap<usize, usize>,
+}
+
+impl FromIterator<(usize, usize)> for Multiset {
+    fn from_iter<T: IntoIterator<Item = (usize, usize)>>(iter: T) -> Self {
+        Multiset {
+            element_counts: iter.into_iter().collect(),
+        }
+    }
 }
 
 pub fn bloom_filter_contains(bins: &[bool], element: &usize, hash_count: usize) -> bool {
@@ -117,7 +140,7 @@ pub fn bloom_filter_contains(bins: &[bool], element: &usize, hash_count: usize) 
 
 #[cfg(test)]
 mod tests {
-    use crate::{bloom_filter_contains, Set};
+    use crate::{bloom_filter_contains, Multiset, Set};
 
     #[test]
     fn test_random() {
@@ -180,5 +203,16 @@ mod tests {
         let elements = vec![1usize, 3, 4];
         let set: Set = elements.iter().map(|e| *e).collect();
         assert_eq!(Set::new(&elements), set);
+    }
+
+    #[test]
+    fn test_multiset_from_iter() {
+        let elements = vec![1usize, 3, 4];
+        let counts = vec![2usize, 2usize, 5usize];
+
+        let multiset_a = Multiset::new(&elements, &counts);
+        let multiset_b: Multiset = elements.into_iter().zip(counts).collect();
+
+        assert_eq!(multiset_a, multiset_b);
     }
 }
