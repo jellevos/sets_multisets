@@ -89,10 +89,10 @@ impl Set {
     }
 }
 
-impl<'a> FromIterator<&'a usize> for Set {
-    fn from_iter<T: IntoIterator<Item=&'a usize>>(iter: T) -> Self {
+impl<'a> FromIterator<usize> for Set {
+    fn from_iter<T: IntoIterator<Item = usize>>(iter: T) -> Self {
         Set {
-            elements: iter.into_iter().cloned().collect(),
+            elements: iter.into_iter().collect(),
         }
     }
 }
@@ -178,7 +178,7 @@ mod tests {
     #[test]
     fn test_set_from_iter() {
         let elements = vec![1usize, 3, 4];
-        let set: Set = elements.iter().collect();
+        let set: Set = elements.iter().map(|e| *e).collect();
         assert_eq!(Set::new(&elements), set);
     }
 }
