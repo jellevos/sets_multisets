@@ -62,6 +62,17 @@ impl Set {
         bitset
     }
 
+    pub fn from_bitset(bitset: &[bool]) -> Set {
+        Set {
+            elements: bitset
+                .iter()
+                .enumerate()
+                .filter(|(_, b)| **b)
+                .map(|(i, _)| i)
+                .collect(),
+        }
+    }
+
     pub fn to_bloom_filter(&self, bin_count: usize, hash_count: usize) -> Vec<bool> {
         let mut bins = vec![false; bin_count];
 
@@ -135,6 +146,12 @@ mod tests {
     fn test_to_bitset() {
         let set = Set::new(&vec![1, 3, 4]);
         assert_eq!(set.to_bitset(5), vec![false, true, false, true, true]);
+    }
+
+    #[test]
+    fn test_from_bitset() {
+        let bitset = vec![false, false, true, true, false, true];
+        assert_eq!(Set::from_bitset(&bitset), Set::new(&vec![2, 3, 5]));
     }
 
     #[test]
