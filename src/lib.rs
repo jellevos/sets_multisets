@@ -3,6 +3,7 @@ use fasthash::xx;
 use rand::rngs::OsRng;
 use rand::seq::index::sample;
 use std::collections::{HashMap, HashSet};
+use std::iter::FromIterator;
 
 #[derive(Eq, PartialEq, Debug)]
 pub struct Set {
@@ -88,6 +89,14 @@ impl Set {
     }
 }
 
+impl<'a> FromIterator<&'a usize> for Set {
+    fn from_iter<T: IntoIterator<Item=&'a usize>>(iter: T) -> Self {
+        Set {
+            elements: iter.into_iter().cloned().collect(),
+        }
+    }
+}
+
 pub struct Multiset {
     pub element_counts: HashMap<usize, usize>,
 }
@@ -164,5 +173,12 @@ mod tests {
         assert!(bloom_filter_contains(&bloom_filter, &3, 2));
         assert!(bloom_filter_contains(&bloom_filter, &4, 2));
         assert!(!bloom_filter_contains(&bloom_filter, &5, 2));
+    }
+
+    #[test]
+    fn test_set_from_iter() {
+        let elements = vec![1usize, 3, 4];
+        let set: Set = elements.iter().collect();
+        assert_eq!(Set::new(&elements), set);
     }
 }
