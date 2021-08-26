@@ -103,7 +103,6 @@ pub fn bloom_filter_contains(bins: &[bool], element: &usize, hash_count: usize) 
     true
 }
 
-
 impl FromIterator<usize> for Set {
     fn from_iter<T: IntoIterator<Item = usize>>(iter: T) -> Self {
         Set {
@@ -114,7 +113,7 @@ impl FromIterator<usize> for Set {
 
 #[cfg(test)]
 mod tests {
-    use crate::sets::{Set, bloom_filter_contains};
+    use crate::sets::{bloom_filter_contains, Set};
 
     #[test]
     fn test_random() {

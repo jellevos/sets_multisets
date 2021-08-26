@@ -1,8 +1,8 @@
-use std::collections::HashMap;
-use std::iter::FromIterator;
+use crate::sets::bloom_filter_contains;
 use bytevec::ByteEncodable;
 use fasthash::xx;
-use crate::sets::bloom_filter_contains;
+use std::collections::HashMap;
+use std::iter::FromIterator;
 
 impl Multiset {
     pub fn new(elements: &[usize], counts: &[usize]) -> Self {
@@ -29,15 +29,23 @@ impl Multiset {
         bitset
     }
 
-    pub fn to_bloom_filter(&self, bin_count: usize, hash_count: usize, max_multiplicity: usize) -> Vec<bool> {
+    pub fn to_bloom_filter(
+        &self,
+        bin_count: usize,
+        hash_count: usize,
+        max_multiplicity: usize,
+    ) -> Vec<bool> {
         let mut bins = vec![false; bin_count];
 
         for (element, count) in &self.element_counts {
             for i in 0..*count {
-                let element_bytes = ((*element * max_multiplicity + i) as u64).encode::<u64>().unwrap();
+                let element_bytes = ((*element * max_multiplicity + i) as u64)
+                    .encode::<u64>()
+                    .unwrap();
 
                 for seed in 0..hash_count {
-                    bins[xx::hash32_with_seed(&element_bytes, seed as u32) as usize % bin_count] = true;
+                    bins[xx::hash32_with_seed(&element_bytes, seed as u32) as usize % bin_count] =
+                        true;
                 }
             }
         }
@@ -46,7 +54,12 @@ impl Multiset {
     }
 }
 
-pub fn bloom_filter_retrieve_count(bins: &[bool], element: &usize, hash_count: usize, max_multiplicity: usize) -> usize {
+pub fn bloom_filter_retrieve_count(
+    bins: &[bool],
+    element: &usize,
+    hash_count: usize,
+    max_multiplicity: usize,
+) -> usize {
     for i in 0..max_multiplicity {
         if !bloom_filter_contains(bins, &(element * max_multiplicity + i), hash_count) {
             return i;
@@ -71,7 +84,7 @@ impl FromIterator<(usize, usize)> for Multiset {
 
 #[cfg(test)]
 mod tests {
-    use crate::multisets::{Multiset, bloom_filter_retrieve_count};
+    use crate::multisets::{bloom_filter_retrieve_count, Multiset};
 
     #[test]
     fn test_multiset_from_iter() {
@@ -87,7 +100,10 @@ mod tests {
     #[test]
     fn test_to_bitset() {
         let multiset = Multiset::new(&vec![1, 3, 4], &vec![1, 2, 1]);
-        assert_eq!(multiset.to_bitset(5, 2), vec![false, false, true, false, false, false, true, true, true, false]);
+        assert_eq!(
+            multiset.to_bitset(5, 2),
+            vec![false, false, true, false, false, false, true, true, true, false]
+        );
     }
 
     #[test]
