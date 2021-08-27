@@ -89,13 +89,22 @@ impl Set {
     }
 }
 
+pub fn bloom_filter_indices(
+    element: &usize,
+    bin_count: usize,
+    hash_count: usize,
+) -> impl Iterator<Item = usize> {
+    let element_bytes = (*element as u64).encode::<u64>().unwrap();
+
+    (0..hash_count)
+        .map(move |seed| (xx::hash32_with_seed(&element_bytes, seed as u32) as usize % bin_count))
+}
+
 pub fn bloom_filter_contains(bins: &[bool], element: &usize, hash_count: usize) -> bool {
     let bin_count = bins.len();
 
-    let element_bytes = (*element as u64).encode::<u64>().unwrap();
-
-    for seed in 0..hash_count {
-        if !bins[xx::hash32_with_seed(&element_bytes, seed as u32) as usize % bin_count] {
+    for index in bloom_filter_indices(element, bin_count, hash_count) {
+        if !bins[index] {
             return false;
         }
     }
