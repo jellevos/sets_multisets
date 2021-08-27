@@ -1,6 +1,9 @@
 use crate::sets::bloom_filter_contains;
 use bytevec::ByteEncodable;
 use fasthash::xx;
+use rand::rngs::OsRng;
+use rand::seq::index::sample;
+use rand::Rng;
 use std::collections::HashMap;
 use std::iter::FromIterator;
 
@@ -15,6 +18,25 @@ impl Multiset {
                 .zip(counts.iter().copied())
                 .collect(),
         }
+    }
+
+    /// `max_multiplicity` is inclusive, so `max_multiplicity = 5` will generate counts that are
+    /// uniformly chosen from 1, 2, 3, 4, 5.
+    pub fn random(element_count: usize, universe: usize, max_multiplicity: usize) -> Self {
+        let elements = sample(&mut OsRng, universe, element_count).into_iter();
+        let counts = (0..element_count).map(|_| OsRng.gen_range(1..=max_multiplicity));
+
+        Multiset {
+            element_counts: elements.zip(counts).collect(),
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        self.element_counts.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.element_counts.is_empty()
     }
 
     pub fn to_bitset(&self, universe: usize, max_multiplicity: usize) -> Vec<bool> {
@@ -85,6 +107,28 @@ impl FromIterator<(usize, usize)> for Multiset {
 #[cfg(test)]
 mod tests {
     use crate::multisets::{bloom_filter_retrieve_count, Multiset};
+
+    #[test]
+    fn test_random() {
+        let multiset1 = Multiset::random(5, 100, 10);
+        let multiset2 = Multiset::random(5, 100, 10);
+
+        assert_eq!(multiset1.len(), 5);
+        assert_eq!(multiset2.len(), 5);
+
+        assert_ne!(multiset1, multiset2);
+
+        for (element, count) in multiset1.element_counts {
+            assert!(element < 100);
+            assert!(count > 0);
+            assert!(count <= 10);
+        }
+        for (element, count) in multiset2.element_counts {
+            assert!(element < 100);
+            assert!(count > 0);
+            assert!(count <= 10);
+        }
+    }
 
     #[test]
     fn test_multiset_from_iter() {
