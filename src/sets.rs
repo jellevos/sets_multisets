@@ -1,11 +1,13 @@
 use bytevec::ByteEncodable;
 use fasthash::xx;
+use rand::prelude::SliceRandom;
 use rand::rngs::OsRng;
 use rand::seq::index::sample;
+use rand::Rng;
 use std::collections::HashSet;
 use std::iter::FromIterator;
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug, Clone)]
 pub struct Set {
     pub elements: HashSet<usize>,
 }
@@ -33,6 +35,10 @@ impl Set {
         self.elements.is_empty()
     }
 
+    pub fn contains(&self, element: &usize) -> bool {
+        self.elements.contains(element)
+    }
+
     pub fn intersect(&self, other: &Set) -> Set {
         Set {
             elements: self
@@ -48,6 +54,22 @@ impl Set {
 
         for set in &sets[2..] {
             result = result.intersect(set);
+        }
+
+        result
+    }
+
+    pub fn unify(&self, other: &Set) -> Set {
+        Set {
+            elements: self.elements.union(&other.elements).copied().collect(),
+        }
+    }
+
+    pub fn union(sets: &[Set]) -> Set {
+        let mut result = sets[0].unify(&sets[1]);
+
+        for set in &sets[2..] {
+            result = result.unify(set);
         }
 
         result
@@ -112,6 +134,81 @@ pub fn bloom_filter_contains(bins: &[bool], element: &usize, hash_count: usize) 
     true
 }
 
+pub fn gen_sets_with_intersection(
+    set_count: usize,
+    element_count: usize,
+    universe: usize,
+    intersection_size: usize,
+) -> Vec<Set> {
+    let intersection = Set::random(intersection_size, universe);
+
+    let mut sets: Vec<Set> = (0..set_count).map(|_| intersection.clone()).collect();
+
+    // Fill with other random elements
+    for i in 0..set_count {
+        while sets[i].len() < element_count {
+            let element = OsRng.gen_range(0..universe);
+
+            // Check if at least one of the other sets does not contain this element
+            let mut can_insert = false;
+            for (j, set) in sets.iter().enumerate() {
+                if i == j {
+                    continue;
+                }
+
+                if !set.contains(&element) {
+                    can_insert = true;
+                    break;
+                }
+            }
+
+            if can_insert && !sets[i].contains(&element) {
+                sets[i].elements.insert(element);
+            }
+        }
+    }
+
+    sets
+}
+
+pub fn gen_sets_with_union(
+    set_count: usize,
+    element_count: usize,
+    universe: usize,
+    union_size: usize,
+) -> Vec<Set> {
+    let union = Set::random(union_size, universe);
+
+    let mut sets = vec![vec![]; set_count];
+
+    // Distribute elements randomly
+    for element in &union.elements {
+        loop {
+            let index = OsRng.gen_range(0..set_count);
+            if sets[index].len() < element_count {
+                sets[index].push(*element);
+                break;
+            }
+        }
+    }
+
+    // Fill with other random elements
+    for set in sets.iter_mut() {
+        let mut elements = union.elements.iter().collect::<Vec<&usize>>();
+        elements.shuffle(&mut OsRng);
+        let mut shuffled_elements = elements.into_iter();
+
+        while set.len() < element_count {
+            let element = shuffled_elements.next().unwrap();
+            if !set.contains(element) {
+                set.push(*element);
+            }
+        }
+    }
+
+    sets.iter().map(|set| Set::new(set)).collect()
+}
+
 impl FromIterator<usize> for Set {
     fn from_iter<T: IntoIterator<Item = usize>>(iter: T) -> Self {
         Set {
@@ -122,7 +219,9 @@ impl FromIterator<usize> for Set {
 
 #[cfg(test)]
 mod tests {
-    use crate::sets::{bloom_filter_contains, Set};
+    use crate::sets::{
+        bloom_filter_contains, gen_sets_with_intersection, gen_sets_with_union, Set,
+    };
 
     #[test]
     fn test_random() {
@@ -185,5 +284,21 @@ mod tests {
         let elements = vec![1usize, 3, 4];
         let set: Set = elements.iter().map(|e| *e).collect();
         assert_eq!(Set::new(&elements), set);
+    }
+
+    #[test]
+    fn test_gen_sets_with_intersection() {
+        let sets = gen_sets_with_intersection(3, 10, 100, 4);
+        assert_eq!(Set::intersection(&sets).len(), 4);
+        assert_eq!(sets[2].len(), 10);
+        assert_ne!(sets[0], sets[1]);
+    }
+
+    #[test]
+    fn test_gen_sets_with_union() {
+        let sets = gen_sets_with_union(3, 10, 100, 20);
+        assert_eq!(Set::union(&sets).len(), 20);
+        assert_eq!(sets[2].len(), 10);
+        assert_ne!(sets[0], sets[1]);
     }
 }
