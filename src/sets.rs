@@ -1,9 +1,9 @@
 use bytevec::ByteEncodable;
 use rand::rngs::OsRng;
 use rand::seq::index::sample;
-use xxh3::hash64_with_seed;
 use std::collections::HashSet;
 use std::iter::FromIterator;
+use xxh3::hash64_with_seed;
 
 #[derive(Eq, PartialEq, Debug)]
 pub struct Set {
