@@ -1,9 +1,9 @@
 use crate::sets::bloom_filter_contains;
 use bytevec::ByteEncodable;
-use fasthash::xx;
 use rand::rngs::OsRng;
 use rand::seq::index::sample;
 use rand::Rng;
+use xxh3::hash64_with_seed;
 use std::collections::HashMap;
 use std::iter::FromIterator;
 
@@ -66,7 +66,7 @@ impl Multiset {
                     .unwrap();
 
                 for seed in 0..hash_count {
-                    bins[xx::hash32_with_seed(&element_bytes, seed as u32) as usize % bin_count] =
+                    bins[hash64_with_seed(&element_bytes, seed as u64) as usize % bin_count] =
                         true;
                 }
             }
