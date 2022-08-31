@@ -5,7 +5,7 @@ use std::collections::HashSet;
 use std::iter::FromIterator;
 use xxh3::hash64_with_seed;
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug, Clone)]
 pub struct Set {
     pub elements: HashSet<usize>,
 }

@@ -90,7 +90,7 @@ pub fn bloom_filter_retrieve_count(
     max_multiplicity
 }
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug, Clone)]
 pub struct Multiset {
     pub element_counts: HashMap<usize, usize>,
 }
