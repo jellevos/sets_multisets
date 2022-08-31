@@ -1,7 +1,9 @@
 use bytevec::ByteEncodable;
 use rand::rngs::OsRng;
+use rand::seq::SliceRandom;
 use rand::seq::index::sample;
 use rand::Rng;
+use std::cmp;
 use std::collections::HashSet;
 use std::iter::FromIterator;
 use xxh3::hash64_with_seed;
@@ -133,6 +135,7 @@ pub fn bloom_filter_contains(bins: &[bool], element: &usize, hash_count: usize) 
     true
 }
 
+/// Generates `set_count` random sets so that the size of the intersection is `intersection_size`.
 pub fn gen_sets_with_intersection(
     set_count: usize,
     element_count: usize,
@@ -170,6 +173,7 @@ pub fn gen_sets_with_intersection(
     sets
 }
 
+/// Generates `set_count` random sets so that the size of the union is `union_size`.
 pub fn gen_sets_with_union(
     set_count: usize,
     element_count: usize,
@@ -206,6 +210,21 @@ pub fn gen_sets_with_union(
     }
 
     sets.iter().map(|set| Set::new(set)).collect()
+}
+
+/// Generates `set_count` random sets so that the size of the intersection is decided uniformly at random (it is at least 1).
+pub fn gen_sets_with_uniform_intersection(
+    set_count: usize,
+    element_count: usize,
+    universe: usize,
+) -> Vec<Set> {
+    let intersection_size = OsRng.gen_range(
+        cmp::max(
+            1,
+            (set_count * element_count) as isize - (universe * (set_count - 1)) as isize,
+        ) as usize..=element_count,
+    );
+    gen_sets_with_intersection(set_count, element_count, universe, intersection_size)
 }
 
 impl FromIterator<usize> for Set {
