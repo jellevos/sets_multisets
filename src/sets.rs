@@ -1,7 +1,7 @@
 use bytevec::ByteEncodable;
 use rand::rngs::OsRng;
-use rand::seq::SliceRandom;
 use rand::seq::index::sample;
+use rand::seq::SliceRandom;
 use rand::Rng;
 use std::cmp;
 use std::collections::HashSet;
