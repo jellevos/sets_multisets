@@ -1,11 +1,10 @@
 use bytevec::ByteEncodable;
-use fasthash::xx;
-use rand::prelude::SliceRandom;
 use rand::rngs::OsRng;
 use rand::seq::index::sample;
 use rand::Rng;
 use std::collections::HashSet;
 use std::iter::FromIterator;
+use xxh3::hash64_with_seed;
 
 #[derive(Eq, PartialEq, Debug, Clone)]
 pub struct Set {
@@ -103,7 +102,7 @@ impl Set {
             let element_bytes = (*element as u64).encode::<u64>().unwrap();
 
             for seed in 0..hash_count {
-                bins[xx::hash32_with_seed(&element_bytes, seed as u32) as usize % bin_count] = true;
+                bins[hash64_with_seed(&element_bytes, seed as u64) as usize % bin_count] = true;
             }
         }
 
@@ -119,7 +118,7 @@ pub fn bloom_filter_indices(
     let element_bytes = (*element as u64).encode::<u64>().unwrap();
 
     (0..hash_count)
-        .map(move |seed| (xx::hash32_with_seed(&element_bytes, seed as u32) as usize % bin_count))
+        .map(move |seed| (hash64_with_seed(&element_bytes, seed as u64) as usize % bin_count))
 }
 
 pub fn bloom_filter_contains(bins: &[bool], element: &usize, hash_count: usize) -> bool {
