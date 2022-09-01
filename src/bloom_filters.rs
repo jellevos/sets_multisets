@@ -25,6 +25,11 @@ pub fn bloom_filter_contains(bins: &[bool], element: &usize, hash_count: usize) 
     true
 }
 
+/// Returns (`min_bin_count`, `hash_count`) that cause an error rate of at most `error_rate` when `element_count` elements are inserted into this Bloom filter.
+pub fn find_compact_params(element_count: usize, error_rate: f64) -> (usize, usize) {
+    todo!()
+}
+
 impl Set {
     pub fn to_bloom_filter(&self, bin_count: usize, hash_count: usize) -> Vec<bool> {
         let mut bins = vec![false; bin_count];
