@@ -1,9 +1,15 @@
 use crate::{multisets::Multiset, sets::Set};
 use bytevec::ByteEncodable;
 
-// TODO: Consider supporting both hash functions at the same time
+// TODO: Consider supporting all hash functions at the same time
 #[cfg(all(feature = "xxh3", feature = "shake128"))]
 compile_error!("Please choose one hash function to use: xxh3 or shake128.");
+#[cfg(all(feature = "xxh3", feature = "blake3"))]
+compile_error!("Please choose one hash function to use: xxh3 or blake3.");
+#[cfg(all(feature = "shake128", feature = "blake3"))]
+compile_error!("Please choose one hash function to use: shake128 or blake3.");
+#[cfg(all(feature = "xxh3", feature = "shake128", feature = "blake3"))]
+compile_error!("Please choose one hash function to use: xxh3, shake128 or blake3.");
 
 #[cfg(feature = "xxh3")]
 use xxh3::hash64_with_seed;
@@ -29,6 +35,21 @@ pub fn hash_element(element: &usize, seed: u64) -> usize {
     let mut reader = hasher.finalize_xof();
     let mut res = [0u8; 8];
     reader.read(&mut res);
+
+    usize::from_ne_bytes(res)
+}
+
+#[cfg(feature = "blake3")]
+pub fn hash_element(element: &usize, seed: u64) -> usize {
+    let element_bytes = (*element as u64).encode::<u64>().unwrap();
+    let seed_bytes = seed.encode::<u64>().unwrap();
+
+    let mut hasher = blake3::Hasher::new();
+    hasher.update(&element_bytes);
+    hasher.update(&seed_bytes);
+    let mut reader = hasher.finalize_xof();
+    let mut res = [0u8; 8];
+    reader.fill(&mut res);
 
     usize::from_ne_bytes(res)
 }
