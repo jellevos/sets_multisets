@@ -14,4 +14,10 @@ readme = "README.md"
 [dependencies]
 rand = "0.8"
 bytevec = "0.2"
-xxh3 = "0.1"
+xxh3 = { version = "0.1", optional = true }
+sha3 = { version = "0.10", optional = true }
+
+[features]
+default = ["xxh3"]
+xxh3 = ["dep:xxh3"]
+shake128 = ["dep:sha3"]

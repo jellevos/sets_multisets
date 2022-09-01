@@ -1,11 +1,8 @@
-use crate::bloom_filters::bloom_filter_contains;
-use bytevec::ByteEncodable;
 use rand::rngs::OsRng;
 use rand::seq::index::sample;
 use rand::Rng;
 use std::collections::HashMap;
 use std::iter::FromIterator;
-use xxh3::hash64_with_seed;
 
 impl Multiset {
     pub fn new(elements: &[usize], counts: &[usize]) -> Self {
@@ -50,44 +47,6 @@ impl Multiset {
 
         bitset
     }
-
-    pub fn to_bloom_filter(
-        &self,
-        bin_count: usize,
-        hash_count: usize,
-        max_multiplicity: usize,
-    ) -> Vec<bool> {
-        let mut bins = vec![false; bin_count];
-
-        for (element, count) in &self.element_counts {
-            for i in 0..*count {
-                let element_bytes = ((*element * max_multiplicity + i) as u64)
-                    .encode::<u64>()
-                    .unwrap();
-
-                for seed in 0..hash_count {
-                    bins[hash64_with_seed(&element_bytes, seed as u64) as usize % bin_count] = true;
-                }
-            }
-        }
-
-        bins
-    }
-}
-
-pub fn bloom_filter_retrieve_count(
-    bins: &[bool],
-    element: &usize,
-    hash_count: usize,
-    max_multiplicity: usize,
-) -> usize {
-    for i in 0..max_multiplicity {
-        if !bloom_filter_contains(bins, &(element * max_multiplicity + i), hash_count) {
-            return i;
-        }
-    }
-
-    max_multiplicity
 }
 
 #[derive(Eq, PartialEq, Debug, Clone)]
@@ -105,7 +64,7 @@ impl FromIterator<(usize, usize)> for Multiset {
 
 #[cfg(test)]
 mod tests {
-    use crate::multisets::{bloom_filter_retrieve_count, Multiset};
+    use crate::multisets::Multiset;
 
     #[test]
     fn test_random() {
@@ -147,17 +106,5 @@ mod tests {
             multiset.to_bitset(5, 2),
             vec![false, false, true, false, false, false, true, true, true, false]
         );
-    }
-
-    #[test]
-    fn test_to_bloom_filter() {
-        let multiset = Multiset::new(&vec![1, 3, 4], &vec![1, 2, 1]);
-        let bloom_filter = multiset.to_bloom_filter(50, 2, 2);
-
-        assert_eq!(bloom_filter_retrieve_count(&bloom_filter, &0, 2, 2), 0);
-        assert_eq!(bloom_filter_retrieve_count(&bloom_filter, &1, 2, 2), 1);
-        assert_eq!(bloom_filter_retrieve_count(&bloom_filter, &2, 2, 2), 0);
-        assert_eq!(bloom_filter_retrieve_count(&bloom_filter, &3, 2, 2), 2);
-        assert_eq!(bloom_filter_retrieve_count(&bloom_filter, &4, 2, 2), 1);
     }
 }
