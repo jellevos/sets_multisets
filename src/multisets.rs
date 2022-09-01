@@ -1,4 +1,4 @@
-use crate::sets::bloom_filter_contains;
+use crate::bloom_filters::bloom_filter_contains;
 use bytevec::ByteEncodable;
 use rand::rngs::OsRng;
 use rand::seq::index::sample;

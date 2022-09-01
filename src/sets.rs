@@ -1,4 +1,3 @@
-use bytevec::ByteEncodable;
 use rand::rngs::OsRng;
 use rand::seq::index::sample;
 use rand::seq::SliceRandom;
@@ -6,7 +5,6 @@ use rand::Rng;
 use std::cmp;
 use std::collections::HashSet;
 use std::iter::FromIterator;
-use xxh3::hash64_with_seed;
 
 #[derive(Eq, PartialEq, Debug, Clone)]
 pub struct Set {
@@ -96,43 +94,6 @@ impl Set {
                 .collect(),
         }
     }
-
-    pub fn to_bloom_filter(&self, bin_count: usize, hash_count: usize) -> Vec<bool> {
-        let mut bins = vec![false; bin_count];
-
-        for element in &self.elements {
-            let element_bytes = (*element as u64).encode::<u64>().unwrap();
-
-            for seed in 0..hash_count {
-                bins[hash64_with_seed(&element_bytes, seed as u64) as usize % bin_count] = true;
-            }
-        }
-
-        bins
-    }
-}
-
-pub fn bloom_filter_indices(
-    element: &usize,
-    bin_count: usize,
-    hash_count: usize,
-) -> impl Iterator<Item = usize> {
-    let element_bytes = (*element as u64).encode::<u64>().unwrap();
-
-    (0..hash_count)
-        .map(move |seed| (hash64_with_seed(&element_bytes, seed as u64) as usize % bin_count))
-}
-
-pub fn bloom_filter_contains(bins: &[bool], element: &usize, hash_count: usize) -> bool {
-    let bin_count = bins.len();
-
-    for index in bloom_filter_indices(element, bin_count, hash_count) {
-        if !bins[index] {
-            return false;
-        }
-    }
-
-    true
 }
 
 /// Generates `set_count` random sets so that the size of the intersection is `intersection_size`.
@@ -237,9 +198,7 @@ impl FromIterator<usize> for Set {
 
 #[cfg(test)]
 mod tests {
-    use crate::sets::{
-        bloom_filter_contains, gen_sets_with_intersection, gen_sets_with_union, Set,
-    };
+    use crate::sets::{gen_sets_with_intersection, gen_sets_with_union, Set};
 
     #[test]
     fn test_random() {
@@ -283,18 +242,6 @@ mod tests {
     fn test_from_bitset() {
         let bitset = vec![false, false, true, true, false, true];
         assert_eq!(Set::from_bitset(&bitset), Set::new(&vec![2, 3, 5]));
-    }
-
-    #[test]
-    fn test_to_bloom_filter() {
-        let set = Set::new(&vec![1, 3, 4]);
-        let bloom_filter = set.to_bloom_filter(20, 2);
-
-        assert!(bloom_filter_contains(&bloom_filter, &1, 2));
-        assert!(!bloom_filter_contains(&bloom_filter, &2, 2));
-        assert!(bloom_filter_contains(&bloom_filter, &3, 2));
-        assert!(bloom_filter_contains(&bloom_filter, &4, 2));
-        assert!(!bloom_filter_contains(&bloom_filter, &5, 2));
     }
 
     #[test]
