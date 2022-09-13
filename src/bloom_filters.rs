@@ -54,6 +54,27 @@ pub fn hash_element(element: &usize, seed: u64) -> usize {
     usize::from_ne_bytes(res)
 }
 
+/// For a maximum error rate and maximum set size, returns a suitable bin count and hash count. These parameters lead to the lowest possible bin_count that assures this maximum error rate.
+pub fn gen_bloom_filter_params(max_error_rate: f64, max_set_size: usize) -> (usize, usize) {
+    let mut h = 1;
+    let mut previous = None;
+    loop {
+        let current = (-(h as f64) * (max_set_size as f64 + 0.5)
+            / (1. - max_error_rate.powf(1. / (h as f64)))
+            + 1.)
+            .ceil() as usize;
+
+        if let Some(p) = previous {
+            if p < current {
+                return (p, h - 1);
+            }
+        }
+
+        h += 1;
+        previous = Some(current);
+    }
+}
+
 pub fn bloom_filter_indices(
     element: &usize,
     bin_count: usize,
