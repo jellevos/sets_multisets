@@ -54,6 +54,21 @@ pub fn hash_element(element: &usize, seed: u64) -> usize {
     usize::from_ne_bytes(res)
 }
 
+#[cfg(feature = "argon2")]
+use argon2::Argon2;
+#[cfg(feature = "argon2")]
+pub fn hash_element(element: &usize, seed: u64) -> usize {
+    let element_bytes = (*element as u64).encode::<u64>().unwrap();
+    let seed_bytes = seed.encode::<u64>().unwrap();
+
+    let mut res = [0u8; 8]; // Can be any desired size
+    Argon2::default()
+        .hash_password_into(&element_bytes, &seed_bytes, &mut res)
+        .unwrap();
+
+    usize::from_ne_bytes(res)
+}
+
 /// For a maximum error rate and maximum set size, returns a suitable minimum bin count and hash count. These parameters lead to the lowest possible bin_count that assures this maximum error rate.
 pub fn gen_bloom_filter_params(max_error_rate: f64, max_set_size: usize) -> (usize, usize) {
     let mut h = 1;
