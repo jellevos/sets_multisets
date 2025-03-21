@@ -60,7 +60,7 @@ pub fn gen_bloom_filter_params(max_error_rate: f64, max_set_size: usize) -> (usi
     let mut previous = None;
     loop {
         let current = (-(h as f64) * (max_set_size as f64 + 0.5)
-            / (1f64.ln() - max_error_rate.powf(1. / (h as f64)))
+            / (1f64 - max_error_rate.powf(1. / (h as f64))).ln()
             + 1.)
             .ceil() as usize;
 
@@ -154,6 +154,8 @@ mod tests {
         sets::Set,
     };
 
+    use super::gen_bloom_filter_params;
+
     #[test]
     fn test_set_to_bloom_filter() {
         let set = Set::new(&vec![1, 3, 4]);
@@ -176,5 +178,19 @@ mod tests {
         assert_eq!(bloom_filter_retrieve_count(&bloom_filter, &2, 2, 2), 0);
         assert_eq!(bloom_filter_retrieve_count(&bloom_filter, &3, 2, 2), 2);
         assert_eq!(bloom_filter_retrieve_count(&bloom_filter, &4, 2, 2), 1);
+    }
+
+    #[test]
+    fn test_bf_parameters_smallrate() {
+        let (bin_count, hash_count) = gen_bloom_filter_params(2f64.powf(-5.), 256);
+        assert_eq!(bin_count, 1852);
+        assert_eq!(hash_count, 5);
+    }
+
+    #[test]
+    fn test_bf_parameters_largerate() {
+        let (bin_count, hash_count) = gen_bloom_filter_params(2f64.powf(-10.), 4096);
+        assert_eq!(bin_count, 59102);
+        assert_eq!(hash_count, 10);
     }
 }
