@@ -92,7 +92,9 @@ pub fn gen_bloom_filter_params(max_error_rate: f64, max_set_size: usize) -> (usi
         }
 
         h += 1;
-        previous = Some(current);
+        if current != 0 {
+            previous = Some(current);
+        }
     }
 }
 
@@ -116,7 +118,9 @@ pub fn gen_bloom_filter_params_log2(
         }
 
         h += 1;
-        previous = Some(current);
+        if current != 0 {
+            previous = Some(current);
+        }
     }
 }
 
@@ -235,6 +239,13 @@ mod tests {
         let (bin_count, hash_count) = gen_bloom_filter_params_log2(-10., 4096);
         assert_eq!(bin_count, 59102);
         assert_eq!(hash_count, 10);
+    }
+
+    #[test]
+    fn test_bf_parameters_tiny_log() {
+        let (bin_count, hash_count) = gen_bloom_filter_params_log2(-160., 4096);
+        assert_eq!(bin_count, 945602);
+        assert_eq!(hash_count, 160);
     }
 }
 
