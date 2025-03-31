@@ -96,6 +96,30 @@ pub fn gen_bloom_filter_params(max_error_rate: f64, max_set_size: usize) -> (usi
     }
 }
 
+/// Same as gen_bloom_filter_params except that the max_error_rate is now log2
+pub fn gen_bloom_filter_params_log2(
+    max_error_rate_log2: f64,
+    max_set_size: usize,
+) -> (usize, usize) {
+    let mut h = 1;
+    let mut previous = None;
+    loop {
+        let current = (-(h as f64) * (max_set_size as f64 + 0.5)
+            / (1f64 - 2f64.powf(max_error_rate_log2 / (h as f64))).ln()
+            + 1.)
+            .ceil() as usize;
+
+        if let Some(p) = previous {
+            if p < current {
+                return (p, h - 1);
+            }
+        }
+
+        h += 1;
+        previous = Some(current);
+    }
+}
+
 pub fn bloom_filter_indices<H: ElementHasher>(
     element: &usize,
     bin_count: usize,
@@ -183,7 +207,7 @@ mod tests {
         sets::Set,
     };
 
-    use super::gen_bloom_filter_params;
+    use super::{gen_bloom_filter_params, gen_bloom_filter_params_log2};
 
     #[test]
     fn test_bf_parameters_smallrate() {
@@ -195,6 +219,20 @@ mod tests {
     #[test]
     fn test_bf_parameters_largerate() {
         let (bin_count, hash_count) = gen_bloom_filter_params(2f64.powf(-10.), 4096);
+        assert_eq!(bin_count, 59102);
+        assert_eq!(hash_count, 10);
+    }
+
+    #[test]
+    fn test_bf_parameters_smallrate_log() {
+        let (bin_count, hash_count) = gen_bloom_filter_params_log2(-5., 256);
+        assert_eq!(bin_count, 1852);
+        assert_eq!(hash_count, 5);
+    }
+
+    #[test]
+    fn test_bf_parameters_largerate_log() {
+        let (bin_count, hash_count) = gen_bloom_filter_params_log2(-10., 4096);
         assert_eq!(bin_count, 59102);
         assert_eq!(hash_count, 10);
     }
