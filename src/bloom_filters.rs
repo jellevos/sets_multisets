@@ -183,8 +183,8 @@ impl Set {
         let mut bins = vec![false; bin_count];
 
         for element in &self.elements {
-            for seed in 0..hash_count {
-                bins[H::hash_element(element, seed as u64) % bin_count] = true;
+            for index in bloom_filter_indices::<H>(element, bin_count, hash_count) {
+                bins[index] = true;
             }
         }
 
@@ -203,9 +203,12 @@ impl Multiset {
 
         for (element, count) in &self.element_counts {
             for i in 0..*count {
-                for seed in 0..hash_count {
-                    bins[H::hash_element(&(*element * max_multiplicity + i), seed as u64)
-                        % bin_count] = true;
+                for index in bloom_filter_indices::<H>(
+                    &(*element * max_multiplicity + i),
+                    bin_count,
+                    hash_count,
+                ) {
+                    bins[index] = true;
                 }
             }
         }
