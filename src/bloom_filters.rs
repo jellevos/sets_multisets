@@ -12,6 +12,12 @@ use argon2::Argon2;
 
 pub trait ElementHasher {
     fn hash_element(element: &usize, seed: u64) -> usize;
+    fn hash_element_multiple_seeds(element: &usize, seeds: &[u64]) -> Vec<usize> {
+        seeds
+            .iter()
+            .map(|seed| Self::hash_element(element, *seed))
+            .collect()
+    }
 }
 
 pub struct Xxh3Hasher;
@@ -64,14 +70,27 @@ impl ElementHasher for Blake3Hasher {
 impl ElementHasher for Argon2Hasher {
     fn hash_element(element: &usize, seed: u64) -> usize {
         let element_bytes = (*element as u64).encode::<u64>().unwrap();
-        let seed_bytes = seed.encode::<u64>().unwrap();
 
-        let mut res = [0u8; 8]; // Can be any desired size
+        let mut res = [0u8; 32];
         Argon2::default()
-            .hash_password_into(&element_bytes, &seed_bytes, &mut res)
+            .hash_password_into(&element_bytes, b"bloom_filter", &mut res)
             .unwrap();
 
-        usize::from_ne_bytes(res)
+        hash64_with_seed(&res, seed) as usize
+    }
+
+    fn hash_element_multiple_seeds(element: &usize, seeds: &[u64]) -> Vec<usize> {
+        let element_bytes = (*element as u64).encode::<u64>().unwrap();
+
+        let mut res = [0u8; 32];
+        Argon2::default()
+            .hash_password_into(&element_bytes, b"bloom_filter", &mut res)
+            .unwrap();
+
+        seeds
+            .iter()
+            .map(|seed| hash64_with_seed(&res, *seed) as usize)
+            .collect()
     }
 }
 
@@ -129,7 +148,14 @@ pub fn bloom_filter_indices<H: ElementHasher>(
     bin_count: usize,
     hash_count: usize,
 ) -> impl Iterator<Item = usize> + '_ {
-    (0..hash_count).map(move |seed| (H::hash_element(element, seed as u64) % bin_count))
+    H::hash_element_multiple_seeds(
+        element,
+        &(0..hash_count)
+            .map(|seed| seed as u64)
+            .collect::<Vec<u64>>(),
+    )
+    .into_iter()
+    .map(move |hash| hash % bin_count)
 }
 
 pub fn bloom_filter_contains<H: ElementHasher>(
@@ -370,6 +396,7 @@ mod tests_argon2 {
     fn test_set_to_bloom_filter() {
         let set = Set::new(&vec![1, 3, 4]);
         let bloom_filter = set.to_bloom_filter::<H>(20, 2);
+        println!("{:?}", bloom_filter);
 
         assert!(bloom_filter_contains::<H>(&bloom_filter, &1, 2));
         assert!(!bloom_filter_contains::<H>(&bloom_filter, &2, 2));
